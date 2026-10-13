@@ -26,10 +26,18 @@ import { GroundMist } from './world/atmosphere/mist';
 import { LightShaftManager } from './world/atmosphere/lightShafts';
 import { SunlessSkyDome } from './world/atmosphere/sky';
 import { FlyCam } from './debug/flyCam';
+import { VariantCache } from './world/flora/generators/variantCache';
+import { FloraMaterialManager } from './world/flora/materials/floraMaterials';
+import { ChunkScatterManager } from './world/scatter/chunkScatterManager';
+import { GatherableManager } from './world/gatherables/gatherableManager';
 
 async function bootstrap(): Promise<void> {
   if (window.location.pathname.includes('/viewer') || window.location.search.includes('viewer')) {
     window.location.href = '/viewer.html';
+    return;
+  }
+  if (window.location.pathname.includes('/flora') || window.location.search.includes('flora')) {
+    window.location.href = '/flora.html';
     return;
   }
 
@@ -85,6 +93,13 @@ async function bootstrap(): Promise<void> {
   lighting.lightPool.registerGlowSource('lookout_shrine', new THREE.Vector3(52, 9.8, -48), '#39ff14', 3.0, 16);
   lighting.lightPool.registerGlowSource('sunken_shallows', new THREE.Vector3(64, 0.5, 32), '#9d24db', 2.8, 14);
 
+  // 10b. Procedural Flora Variant Cache, Chunk Scatter Manager & Gatherables
+  const variantCache = VariantCache.getInstance();
+  await variantCache.init(GLIMMERWOOD_REGION.seed);
+  const floraMaterials = FloraMaterialManager.getInstance();
+  const scatterManager = new ChunkScatterManager(scene, GLIMMERWOOD_REGION, heightFunction, physics, lighting);
+  const gatherableManager = new GatherableManager(scatterManager);
+
   // 11. Combat Hitboxes & Particle VFX
   HitboxManager.getInstance().init(scene);
   ImpactVfxManager.getInstance().init(scene);
@@ -125,7 +140,8 @@ async function bootstrap(): Promise<void> {
     postPipeline,
     flyCam,
     spores,
-    renderer: engineRenderer.renderer
+    renderer: engineRenderer.renderer,
+    scatterManager
   });
 
   // Toggle debug panel on F1
@@ -194,6 +210,11 @@ async function bootstrap(): Promise<void> {
       chunkManager.update(playerController.renderPos);
       terrainMaterial.update(elapsedTime, playerController.renderPos);
 
+      // Stream procedural flora scatter & gatherables around player
+      scatterManager.update(playerController.renderPos);
+      floraMaterials.update(elapsedTime);
+      gatherableManager.update(dt, playerController.renderPos, camera.camera.getWorldDirection(new THREE.Vector3()));
+
       // Update atmosphere systems
       waterBodies.update(elapsedTime);
       spores.update(dt, playerController.renderPos, camera.camera);
@@ -225,7 +246,9 @@ async function bootstrap(): Promise<void> {
     scene,
     postPipeline,
     heightFunction,
-    engineRenderer
+    engineRenderer,
+    scatterManager,
+    gatherableManager
   };
 
   gameLoop.start();

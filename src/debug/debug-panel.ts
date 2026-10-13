@@ -20,6 +20,7 @@ import { PostPipeline, QualityPreset } from '../engine/post/postPipeline';
 import { FlyCam } from './flyCam';
 import { SporeAtmosphere } from '../world/atmosphere/spores';
 import { ProceduralTextureGenerator } from '../world/terrain/proceduralTextures';
+import { ChunkScatterManager } from '../world/scatter/chunkScatterManager';
 
 export interface WorldDebugOptions {
   chunkManager?: ChunkManager;
@@ -30,6 +31,7 @@ export interface WorldDebugOptions {
   flyCam?: FlyCam | null;
   spores?: SporeAtmosphere;
   renderer?: THREE.WebGLRenderer;
+  scatterManager?: ChunkScatterManager;
 }
 
 export class DebugPanel {
@@ -67,6 +69,17 @@ export class DebugPanel {
     triangles: 0,
     workerTime: '0.0 ms',
     freezeStreaming: false
+  };
+
+  private floraMonitor = {
+    activeChunks: 0,
+    totalInstances: 0,
+    drawCalls: 0,
+    triangles: 0,
+    glowLights: 0,
+    openFloraShowcase: () => {
+      window.open('/flora.html', '_blank');
+    }
   };
 
   private perfMonitor = {
@@ -179,6 +192,7 @@ export class DebugPanel {
 
     this.setupQualityFolder();
     this.setupTerrainFolder();
+    this.setupFloraScatterFolder();
     this.setupLightingFolder();
     this.setupPostProcessingFolder();
     this.setupAtmosphereWaterWindFolder();
@@ -245,6 +259,17 @@ export class DebugPanel {
       .map(([k, isFb]) => `${k}: ${isFb ? 'Procedural Fallback' : 'Texture File'}`)
       .join('\n');
     f.add({ report: reportStr }, 'report').name('Layer Textures').listen().disable();
+    f.open();
+  }
+
+  private setupFloraScatterFolder(): void {
+    const f = this.gui.addFolder('Flora & Scatter Engine');
+    f.add(this.floraMonitor, 'activeChunks').name('Active Flora Chunks').listen().disable();
+    f.add(this.floraMonitor, 'totalInstances').name('Flora Instances').listen().disable();
+    f.add(this.floraMonitor, 'drawCalls').name('Flora Draw Calls').listen().disable();
+    f.add(this.floraMonitor, 'triangles').name('Flora Triangles').listen().disable();
+    f.add(this.floraMonitor, 'glowLights').name('Registered Glow Lights').listen().disable();
+    f.add(this.floraMonitor, 'openFloraShowcase').name('Open Flora Showcase [/flora]');
     f.open();
   }
 
@@ -488,6 +513,16 @@ export class DebugPanel {
       this.terrainMonitor.pooledChunks = stats.pooledChunks;
       this.terrainMonitor.triangles = stats.totalTriangles;
       this.terrainMonitor.workerTime = `${stats.lastWorkerTimeMs.toFixed(1)} ms`;
+    }
+
+    // 2b. Flora & Scatter statistics
+    if (this.worldOpts?.scatterManager) {
+      const sStats = this.worldOpts.scatterManager.stats;
+      this.floraMonitor.activeChunks = sStats.activeChunks;
+      this.floraMonitor.totalInstances = sStats.totalInstances;
+      this.floraMonitor.drawCalls = sStats.totalDrawCalls;
+      this.floraMonitor.triangles = sStats.totalTriangles;
+      this.floraMonitor.glowLights = sStats.registeredGlowLights;
     }
 
     // 3. Renderer performance statistics

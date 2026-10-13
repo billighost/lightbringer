@@ -11,7 +11,15 @@ export type CombatEventType =
   | 'dummyDamaged'
   | 'dummyPoiseBreak'
   | 'dummyReset'
-  | 'animationEvent';
+  | 'animationEvent'
+  | 'gatherAttempted'
+  | 'gathered';
+
+export interface GatherEventPayload {
+  resourceId: string;
+  gatherableId: string;
+  position: { x: number; y: number; z: number };
+}
 
 export interface AnimationEventPayload {
   eventName: string;
@@ -58,6 +66,8 @@ export interface EventPayloadMap {
   dummyPoiseBreak: { dummyId: string };
   dummyReset: { dummyId: string };
   animationEvent: AnimationEventPayload;
+  gatherAttempted: GatherEventPayload;
+  gathered: GatherEventPayload;
 }
 
 type EventListener<K extends CombatEventType> = (payload: EventPayloadMap[K]) => void;

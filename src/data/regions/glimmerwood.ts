@@ -1,4 +1,5 @@
 import { RegionData } from './schema';
+import { GLIMMERWOOD_SCATTER_RULES } from '../flora/scatterPresets';
 
 export const GLIMMERWOOD_REGION: RegionData = {
   id: 'glimmerwood',
@@ -172,6 +173,6 @@ export const GLIMMERWOOD_REGION: RegionData = {
   ],
   stamps: [],
   zones: [],
-  scatterRules: [],
+  scatterRules: GLIMMERWOOD_SCATTER_RULES,
   landmarks: []
 };

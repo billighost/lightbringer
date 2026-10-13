@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lightbringer - Flora & Scatter Showcase</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+      }
+      body, html {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: #070d14;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: #e2e8f0;
+      }
+      #canvas-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        display: block;
+      }
+      #ui-header {
+        position: fixed;
+        top: 16px;
+        left: 20px;
+        background: rgba(8, 20, 28, 0.85);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 12px 20px;
+        border-radius: 10px;
+        border: 1px solid rgba(0, 242, 255, 0.25);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        z-index: 10;
+        pointer-events: auto;
+      }
+      #ui-header h1 {
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: #00f2ff;
+        margin-bottom: 4px;
+      }
+      #ui-header p {
+        font-size: 12px;
+        color: #94a3b8;
+      }
+      #nav-back {
+        display: inline-block;
+        margin-top: 8px;
+        font-size: 11px;
+        color: #38bdf8;
+        text-decoration: none;
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        padding: 3px 8px;
+        border-radius: 4px;
+        transition: background 0.2s ease;
+      }
+      #nav-back:hover {
+        background: rgba(56, 189, 248, 0.2);
+      }
+      #budget-badge {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        background: rgba(8, 20, 28, 0.88);
+        backdrop-filter: blur(8px);
+        padding: 12px 18px;
+        border-radius: 8px;
+        border: 1px solid rgba(42, 252, 100, 0.35);
+        font-family: monospace;
+        font-size: 12px;
+        z-index: 10;
+        line-height: 1.5;
+        max-width: 480px;
+      }
+      #budget-badge .pass {
+        color: #2afc64;
+        font-weight: bold;
+      }
+      #budget-badge .warn {
+        color: #ff9800;
+        font-weight: bold;
+      }
+      .lil-gui {
+        z-index: 30 !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="canvas-container"></div>
+
+    <div id="ui-header">
+      <h1>Flora & Scatter Kit</h1>
+      <p>Procedural Flora, Rocks, and Gatherables Showcase</p>
+      <a id="nav-back" href="/">&larr; Return to Game</a>
+    </div>
+
+    <div id="budget-badge">
+      <div>Budget Validation: <span id="budget-status" class="pass">VALIDATING...</span></div>
+      <div id="budget-details" style="color: #94a3b8; font-size: 11px; margin-top: 4px;">Checking archetypes against polygon limits...</div>
+    </div>
+
+    <script type="module" src="/src/viewer/floraShowcase.ts"></script>
+  </body>
+</html>

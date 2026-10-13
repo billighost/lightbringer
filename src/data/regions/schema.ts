@@ -136,6 +136,8 @@ export interface WindParams {
   gustStrength: number;
 }
 
+import { ScatterRule } from '../flora/scatterPresets';
+
 export interface RegionData {
   id: string;
   name: string;
@@ -155,6 +157,7 @@ export interface RegionData {
   features: TerrainFeature[];
   stamps: TerrainStamp[];
   zones: unknown[];
-  scatterRules: unknown[];
+  scatterRules: ScatterRule[];
   landmarks: unknown[];
 }
+
