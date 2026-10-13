@@ -1,0 +1,166 @@
+{
+  "id": "player_smpl",
+  "name": "Hero Test (SMPL Rig)",
+  "modelAssetId": "player_smpl",
+  "targetHeight": 2.0,
+  "forwardFix": 0.0,
+  "skeletonType": "smpl",
+  "boneMap": {
+    "hips": "m_avg_Pelvis",
+    "spine": "m_avg_Spine1",
+    "chest": "m_avg_Spine2",
+    "neck": "m_avg_Neck",
+    "head": "m_avg_Head",
+    "leftShoulder": "m_avg_L_Collar",
+    "rightShoulder": "m_avg_R_Collar",
+    "leftUpperArm": "m_avg_L_Shoulder",
+    "rightUpperArm": "m_avg_R_Shoulder",
+    "leftLowerArm": "m_avg_L_Elbow",
+    "rightLowerArm": "m_avg_R_Elbow",
+    "leftHand": "m_avg_L_Wrist",
+    "rightHand": "m_avg_R_Wrist",
+    "leftUpperLeg": "m_avg_L_Hip",
+    "rightUpperLeg": "m_avg_R_Hip",
+    "leftLowerLeg": "m_avg_L_Knee",
+    "rightLowerLeg": "m_avg_R_Knee",
+    "leftFoot": "m_avg_L_Ankle",
+    "rightFoot": "m_avg_R_Ankle",
+    "leftToes": "m_avg_L_Foot",
+    "rightToes": "m_avg_R_Foot"
+  },
+  "sockets": {
+    "rightHandSocket": {
+      "bone": "m_avg_R_Wrist",
+      "position": [0.05, 0.0, 0.0],
+      "rotation": [0.0, 0.0, 0.0]
+    },
+    "backSocket": {
+      "bone": "m_avg_Spine2",
+      "position": [0.0, 0.0, -0.18],
+      "rotation": [0.0, 0.0, 0.0]
+    },
+    "headSocket": {
+      "bone": "m_avg_Head",
+      "position": [0.0, 0.22, 0.0],
+      "rotation": [0.0, 0.0, 0.0]
+    },
+    "chestSocket": {
+      "bone": "m_avg_Spine2",
+      "position": [0.0, 0.0, 0.18],
+      "rotation": [0.0, 0.0, 0.0]
+    }
+  },
+  "animationMap": {
+    "idle": {
+      "library": "humanoid_basic",
+      "clipName": "idle",
+      "speed": 1.0,
+      "loop": true,
+      "blendIn": 0.2,
+      "blendOut": 0.2,
+      "layer": "base"
+    },
+    "walk": {
+      "library": "humanoid_basic",
+      "clipName": "walk",
+      "speed": 1.0,
+      "loop": true,
+      "blendIn": 0.15,
+      "blendOut": 0.15,
+      "layer": "base",
+      "strideLength": 2.0,
+      "rootMotion": "none"
+    },
+    "run": {
+      "library": "humanoid_basic",
+      "clipName": "run",
+      "speed": 1.0,
+      "loop": true,
+      "blendIn": 0.15,
+      "blendOut": 0.15,
+      "layer": "base",
+      "strideLength": 2.6,
+      "rootMotion": "none"
+    },
+    "attack_light_1": {
+      "library": "humanoid_basic",
+      "clipName": "attack_light_1",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.08,
+      "blendOut": 0.15,
+      "layer": "upper",
+      "activeStart": 0.18,
+      "activeEnd": 0.28
+    },
+    "attack_light_2": {
+      "library": "humanoid_basic",
+      "clipName": "attack_light_2",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.08,
+      "blendOut": 0.15,
+      "layer": "upper",
+      "activeStart": 0.16,
+      "activeEnd": 0.26
+    },
+    "attack_light_3": {
+      "library": "humanoid_basic",
+      "clipName": "attack_light_3",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.1,
+      "blendOut": 0.2,
+      "layer": "upper",
+      "activeStart": 0.22,
+      "activeEnd": 0.36
+    },
+    "attack_heavy": {
+      "library": "humanoid_basic",
+      "clipName": "attack_heavy",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.12,
+      "blendOut": 0.2,
+      "layer": "upper",
+      "activeStart": 0.55,
+      "activeEnd": 0.71
+    },
+    "dodge": {
+      "library": "humanoid_basic",
+      "clipName": "dodge",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.05,
+      "blendOut": 0.1,
+      "layer": "base"
+    },
+    "hit": {
+      "library": "humanoid_basic",
+      "clipName": "hit",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.04,
+      "blendOut": 0.1,
+      "layer": "additive"
+    },
+    "stagger": {
+      "library": "humanoid_basic",
+      "clipName": "stagger",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.08,
+      "blendOut": 0.15,
+      "layer": "base"
+    },
+    "death": {
+      "library": "humanoid_basic",
+      "clipName": "death",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.1,
+      "blendOut": 0.2,
+      "layer": "base"
+    }
+  }
+}

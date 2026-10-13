@@ -1,0 +1,166 @@
+{
+  "id": "player_test",
+  "name": "Hero Test (Mixamo Rig)",
+  "modelAssetId": "player_test",
+  "targetHeight": 1.8,
+  "forwardFix": 0.0,
+  "skeletonType": "mixamo",
+  "boneMap": {
+    "hips": "mixamorig_Hips",
+    "spine": "mixamorig_Spine",
+    "chest": "mixamorig_Spine1",
+    "neck": "mixamorig_Neck",
+    "head": "mixamorig_Head",
+    "leftShoulder": "mixamorig_LeftShoulder",
+    "rightShoulder": "mixamorig_RightShoulder",
+    "leftUpperArm": "mixamorig_LeftArm",
+    "rightUpperArm": "mixamorig_RightArm",
+    "leftLowerArm": "mixamorig_LeftForeArm",
+    "rightLowerArm": "mixamorig_RightForeArm",
+    "leftHand": "mixamorig_LeftHand",
+    "rightHand": "mixamorig_RightHand",
+    "leftUpperLeg": "mixamorig_LeftUpLeg",
+    "rightUpperLeg": "mixamorig_RightUpLeg",
+    "leftLowerLeg": "mixamorig_LeftLeg",
+    "rightLowerLeg": "mixamorig_RightLeg",
+    "leftFoot": "mixamorig_LeftFoot",
+    "rightFoot": "mixamorig_RightFoot",
+    "leftToes": "mixamorig_LeftToeBase",
+    "rightToes": "mixamorig_RightToeBase"
+  },
+  "sockets": {
+    "rightHandSocket": {
+      "bone": "mixamorig_RightHand",
+      "position": [0.05, 0.0, 0.0],
+      "rotation": [0.0, 0.0, 0.0]
+    },
+    "backSocket": {
+      "bone": "mixamorig_Spine1",
+      "position": [0.0, 0.0, -0.16],
+      "rotation": [0.0, 0.0, 0.0]
+    },
+    "headSocket": {
+      "bone": "mixamorig_Head",
+      "position": [0.0, 0.2, 0.0],
+      "rotation": [0.0, 0.0, 0.0]
+    },
+    "chestSocket": {
+      "bone": "mixamorig_Spine1",
+      "position": [0.0, 0.0, 0.16],
+      "rotation": [0.0, 0.0, 0.0]
+    }
+  },
+  "animationMap": {
+    "idle": {
+      "library": "humanoid_basic",
+      "clipName": "idle",
+      "speed": 1.0,
+      "loop": true,
+      "blendIn": 0.2,
+      "blendOut": 0.2,
+      "layer": "base"
+    },
+    "walk": {
+      "library": "humanoid_basic",
+      "clipName": "walk",
+      "speed": 1.0,
+      "loop": true,
+      "blendIn": 0.15,
+      "blendOut": 0.15,
+      "layer": "base",
+      "strideLength": 1.8,
+      "rootMotion": "none"
+    },
+    "run": {
+      "library": "humanoid_basic",
+      "clipName": "run",
+      "speed": 1.0,
+      "loop": true,
+      "blendIn": 0.15,
+      "blendOut": 0.15,
+      "layer": "base",
+      "strideLength": 2.4,
+      "rootMotion": "none"
+    },
+    "attack_light_1": {
+      "library": "humanoid_basic",
+      "clipName": "attack_light_1",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.08,
+      "blendOut": 0.15,
+      "layer": "upper",
+      "activeStart": 0.18,
+      "activeEnd": 0.28
+    },
+    "attack_light_2": {
+      "library": "humanoid_basic",
+      "clipName": "attack_light_2",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.08,
+      "blendOut": 0.15,
+      "layer": "upper",
+      "activeStart": 0.16,
+      "activeEnd": 0.26
+    },
+    "attack_light_3": {
+      "library": "humanoid_basic",
+      "clipName": "attack_light_3",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.1,
+      "blendOut": 0.2,
+      "layer": "upper",
+      "activeStart": 0.22,
+      "activeEnd": 0.36
+    },
+    "attack_heavy": {
+      "library": "humanoid_basic",
+      "clipName": "attack_heavy",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.12,
+      "blendOut": 0.2,
+      "layer": "upper",
+      "activeStart": 0.55,
+      "activeEnd": 0.71
+    },
+    "dodge": {
+      "library": "humanoid_basic",
+      "clipName": "dodge",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.05,
+      "blendOut": 0.1,
+      "layer": "base"
+    },
+    "hit": {
+      "library": "humanoid_basic",
+      "clipName": "hit",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.04,
+      "blendOut": 0.1,
+      "layer": "additive"
+    },
+    "stagger": {
+      "library": "humanoid_basic",
+      "clipName": "stagger",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.08,
+      "blendOut": 0.15,
+      "layer": "base"
+    },
+    "death": {
+      "library": "humanoid_basic",
+      "clipName": "death",
+      "speed": 1.0,
+      "loop": false,
+      "blendIn": 0.1,
+      "blendOut": 0.2,
+      "layer": "base"
+    }
+  }
+}

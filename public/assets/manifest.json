@@ -1,0 +1,47 @@
+{
+  "version": "1.0.0",
+  "characters": {
+    "player_test": {
+      "id": "player_test",
+      "name": "Hero Test (Mixamo Rig)",
+      "glbPath": "/assets/characters/player_test.glb",
+      "definitionPath": "/assets/characters/player_test.json",
+      "scale": 1.0,
+      "forwardFix": 0.0,
+      "metadata": {
+        "description": "Code-generated Mixamo humanoid test character"
+      }
+    },
+    "player_smpl": {
+      "id": "player_smpl",
+      "name": "Hero Test (SMPL Rig)",
+      "glbPath": "/assets/characters/player_smpl.glb",
+      "definitionPath": "/assets/characters/player_smpl.json",
+      "scale": 1.0,
+      "forwardFix": 0.0,
+      "metadata": {
+        "description": "Code-generated SMPL academic humanoid test character"
+      }
+    }
+  },
+  "props": {
+    "training_staff": {
+      "id": "training_staff",
+      "name": "Wooden Training Staff",
+      "glbPath": "/assets/props/staff.glb",
+      "scale": 1.0
+    }
+  },
+  "animationLibraries": {
+    "humanoid_basic": {
+      "id": "humanoid_basic",
+      "name": "Basic Humanoid Combat Pack",
+      "glbPath": "/assets/animations/humanoid_basic.glb",
+      "eventsPath": "/assets/animation-events/humanoid_basic.json",
+      "metadata": {
+        "author": "Lightbringer Core",
+        "license": "CC0"
+      }
+    }
+  }
+}

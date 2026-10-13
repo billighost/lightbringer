@@ -1,0 +1,31 @@
+{
+  "libraryId": "humanoid_basic",
+  "events": {
+    "attack_light_1": [
+      { "time": 0.18, "event": "hitboxOn" },
+      { "time": 0.28, "event": "hitboxOff" },
+      { "time": 0.20, "event": "comboWindowOpen" }
+    ],
+    "attack_light_2": [
+      { "time": 0.16, "event": "hitboxOn" },
+      { "time": 0.26, "event": "hitboxOff" },
+      { "time": 0.18, "event": "comboWindowOpen" }
+    ],
+    "attack_light_3": [
+      { "time": 0.22, "event": "hitboxOn" },
+      { "time": 0.36, "event": "hitboxOff" }
+    ],
+    "attack_heavy": [
+      { "time": 0.55, "event": "hitboxOn" },
+      { "time": 0.71, "event": "hitboxOff" }
+    ],
+    "walk": [
+      { "time": 0.25, "event": "footstepLeft" },
+      { "time": 0.75, "event": "footstepRight" }
+    ],
+    "run": [
+      { "time": 0.18, "event": "footstepLeft" },
+      { "time": 0.52, "event": "footstepRight" }
+    ]
+  }
+}
