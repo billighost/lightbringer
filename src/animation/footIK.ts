@@ -29,6 +29,7 @@ export class FootIKSolver {
   public config: FootIKConfig = { ...DEFAULT_FOOT_IK_CONFIG };
 
   private hipsBone: THREE.Bone | null = null;
+  public baseHipsY = 0;
   private leftLeg: LegBones = { upperLeg: null, lowerLeg: null, foot: null };
   private rightLeg: LegBones = { upperLeg: null, lowerLeg: null, foot: null };
 
@@ -55,6 +56,9 @@ export class FootIKSolver {
     };
 
     this.hipsBone = findBone(boneMap.hips);
+    if (this.hipsBone) {
+      this.baseHipsY = this.hipsBone.position.y;
+    }
     this.leftLeg = {
       upperLeg: findBone(boneMap.leftUpperLeg),
       lowerLeg: findBone(boneMap.leftLowerLeg),
@@ -128,8 +132,8 @@ export class FootIKSolver {
       const targetPelvisOffset = Math.max(-this.config.maxAdjust, Math.min(0, Math.min(leftDelta, rightDelta)));
       this.pelvisOffsetY = THREE.MathUtils.lerp(this.pelvisOffsetY, targetPelvisOffset, smoothFactor);
 
-      // Apply pelvis offset scaled by weight
-      this.hipsBone.position.y += this.pelvisOffsetY * this.currentWeight;
+      // Apply pelvis offset scaled by weight relative to base hips height
+      this.hipsBone.position.y = this.baseHipsY + this.pelvisOffsetY * this.currentWeight;
     }
 
     // 4. Two-bone IK for left and right legs
@@ -169,6 +173,12 @@ export class FootIKSolver {
     leg.upperLeg.getWorldPosition(this.tempVec1); // Hip position A
     leg.lowerLeg.getWorldPosition(this.tempVec2); // Knee position B
     leg.foot.getWorldPosition(this.tempVec3);     // Foot position C
+
+    const footDelta = targetFootY - this.tempVec3.y;
+    // On flat ground or when foot is already close to target ground height, preserve locomotion swing
+    if (Math.abs(footDelta) < 0.02) {
+      return;
+    }
 
     const boneB = leg.lowerLeg;
     const boneC = leg.foot;

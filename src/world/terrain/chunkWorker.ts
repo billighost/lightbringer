@@ -223,5 +223,8 @@ self.onmessage = (event: MessageEvent<ChunkWorkerRequest>) => {
   };
 
   // Transfer buffers directly to eliminate memory copy
-  self.postMessage(response, [positions.buffer, normals.buffer, uvs.buffer, indices.buffer]);
+  (self as unknown as { postMessage: (msg: unknown, transfer: Transferable[]) => void }).postMessage(
+    response,
+    [positions.buffer, normals.buffer, uvs.buffer, indices.buffer]
+  );
 };

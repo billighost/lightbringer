@@ -11,6 +11,7 @@ export class CharacterVisual {
   public staffMesh!: THREE.Mesh;
   public staffTip: THREE.Object3D;
   private currentModel: THREE.Object3D | null = null;
+  private silhouetteGroup: THREE.Group | null = null;
 
   constructor() {
     this.root = new THREE.Group();
@@ -22,8 +23,8 @@ export class CharacterVisual {
     this.staffTip = new THREE.Object3D();
 
     // Build default dark silhouette
-    const silhouette = this.buildSilhouetteMesh();
-    this.setModel(silhouette);
+    this.silhouetteGroup = this.buildSilhouetteMesh();
+    this.setModel(this.silhouetteGroup);
   }
 
   /**
@@ -35,6 +36,21 @@ export class CharacterVisual {
     }
     this.currentModel = model;
     this.modelContainer.add(model);
+  }
+
+  /**
+   * Restores the default stylized capsule silhouette and re-attaches the staff
+   */
+  public restoreSilhouette(): void {
+    if (!this.silhouetteGroup) {
+      this.silhouetteGroup = this.buildSilhouetteMesh();
+    }
+    this.setModel(this.silhouetteGroup);
+    if (this.staffPivot && this.bodyGroup && !this.bodyGroup.children.includes(this.staffPivot)) {
+      this.bodyGroup.add(this.staffPivot);
+      this.staffPivot.position.set(0.38, 0.95, 0.1);
+      this.staffPivot.rotation.set(0, 0, 0);
+    }
   }
 
   public getModel(): THREE.Object3D | null {

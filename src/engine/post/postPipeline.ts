@@ -66,7 +66,7 @@ export class PostPipeline {
     quality: 'high'
   };
 
-  private isEnabled = true;
+  private isEnabled = false;
 
   constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
     this.renderer = renderer;
@@ -74,7 +74,7 @@ export class PostPipeline {
     this.camera = camera;
 
     this.composer = new EffectComposer(renderer, {
-      frameBufferType: THREE.HalfFloatType
+      frameBufferType: THREE.UnsignedByteType
     });
 
     // 1. Scene Render Pass
@@ -128,21 +128,25 @@ export class PostPipeline {
     });
     this.dofEffect.blendMode.opacity.value = 0.0; // Disabled by default
 
-    // Combine compatible effects into single full-screen pass
+    // Main scene effects pass (Bloom + ToneMapping + Color Grading + Vignette + Grain)
     this.effectPass = new EffectPass(
       camera,
-      this.smaaEffect,
       this.bloomEffect,
       this.toneMappingEffect,
       this.brightContrastEffect,
       this.hueSatEffect,
-      this.chromaticAberrationEffect,
       this.noiseEffect,
-      this.vignetteEffect,
-      this.dofEffect
+      this.vignetteEffect
     );
-
     this.composer.addPass(this.effectPass);
+
+    // Chromatic Aberration in its own pass (cannot be merged with convolution BloomEffect)
+    const chromaticPass = new EffectPass(camera, this.chromaticAberrationEffect);
+    this.composer.addPass(chromaticPass);
+
+    // SMAA Anti-aliasing pass
+    const smaaPass = new EffectPass(camera, this.smaaEffect);
+    this.composer.addPass(smaaPass);
 
     this.applyConfig();
   }

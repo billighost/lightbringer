@@ -34,6 +34,7 @@ export interface PlayerContext {
   facingAngle: number;
   isGrounded: boolean;
   currentPos: THREE.Vector3;
+  speedModifier?: number;
   setFacingAngle: (angle: number) => void;
   setHorizontalVel: (v: THREE.Vector3) => void;
   setVerticalVel: (vy: number) => void;

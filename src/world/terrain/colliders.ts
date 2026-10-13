@@ -13,7 +13,7 @@ export interface ActiveColliderChunk {
 
 export class TerrainColliderManager {
   private physics: PhysicsWorld;
-  private region: RegionData;
+  public region: RegionData;
   private heightFunction: HeightFunction;
   private chunkSize: number;
   private activeColliders = new Map<string, ActiveColliderChunk>();

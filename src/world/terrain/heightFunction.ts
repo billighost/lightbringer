@@ -1,4 +1,4 @@
-import { RegionData, TerrainFeature, FlattenRectFeature, SplinePathFeature } from '../../data/regions/schema';
+import { RegionData, FlattenRectFeature, SplinePathFeature } from '../../data/regions/schema';
 
 /**
  * Deterministic PRNG using Mulberry32

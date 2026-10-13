@@ -147,6 +147,25 @@ export class AnimationController {
     this.play('idle');
   }
 
+  /**
+   * Resets character animation controller to procedural silhouette mode
+   */
+  public enableSilhouetteFallback(): void {
+    if (this.mixer) {
+      this.mixer.stopAllAction();
+    }
+    this.mixer = null;
+    this.skeleton = null;
+    this.clipsByName.clear();
+    this.definition = null;
+    this.baseAction = null;
+    this.upperAction = null;
+    this.additiveAction = null;
+    this.fallbackActive = true;
+    this.fallbackReason = 'Silhouette procedural animation active';
+    this.play(this.currentLogicalAnim || 'idle');
+  }
+
   private attachSockets(model: THREE.Object3D): void {
     if (!this.definition?.sockets) return;
 

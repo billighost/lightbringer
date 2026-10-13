@@ -95,10 +95,12 @@ export class LocomotionState implements PlayerState {
       ctx.stamina.setRegenPaused(false);
     }
 
-    // Target speed
-    const targetSpeed = isMoving
+    // Target speed (scaled by external modifiers such as shallow water wading)
+    const speedMod = ctx.speedModifier ?? 1.0;
+    const baseTargetSpeed = isMoving
       ? (isSprinting ? ctx.movementConfig.sprintSpeed : ctx.movementConfig.walkSpeed)
       : 0;
+    const targetSpeed = baseTargetSpeed * speedMod;
 
     const targetVelocity = moveDir.clone().multiplyScalar(targetSpeed);
 

@@ -58,6 +58,7 @@ export class PlayerController implements HurtboxTarget {
   public horizontalVel = new THREE.Vector3();
   public verticalVel = 0;
   public currentFacingAngle = 0;
+  public speedModifier = 1.0;
 
   private spawnPosition = new THREE.Vector3(0, 1.5, 0);
   private readonly capsuleRadius = 0.35;
@@ -105,6 +106,11 @@ export class PlayerController implements HurtboxTarget {
 
   public async switchCharacter(characterId: string): Promise<void> {
     this.currentCharacterId = characterId;
+    if (characterId === 'silhouette') {
+      this.visual.restoreSilhouette();
+      this.anim.enableSilhouetteFallback();
+      return;
+    }
     try {
       const asset = await AssetManager.getInstance().loadCharacter(characterId);
       this.visual.setModel(asset.model);
@@ -145,6 +151,7 @@ export class PlayerController implements HurtboxTarget {
       facingAngle: this.currentFacingAngle,
       isGrounded: this.isGrounded,
       currentPos: this.currentPos,
+      speedModifier: this.speedModifier,
       setFacingAngle: (angle: number) => {
         this.currentFacingAngle = angle;
         this.visual.root.rotation.y = angle;

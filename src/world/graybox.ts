@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import RAPIER from '@dimforge/rapier3d-compat';
 import { PhysicsWorld } from '../engine/physics';
 import { TrainingDummy } from '../entities/trainingDummy';
 
@@ -6,7 +7,9 @@ export class GrayboxWorld {
   public scene: THREE.Scene;
   public physics: PhysicsWorld;
   public dummies: TrainingDummy[] = [];
+  public isVisible = false;
   private meshes: THREE.Mesh[] = [];
+  private colliders: RAPIER.Collider[] = [];
 
   constructor(scene: THREE.Scene, physics: PhysicsWorld) {
     this.scene = scene;
@@ -19,6 +22,17 @@ export class GrayboxWorld {
     this.createRamp();
     this.createObstaclesAndWalls();
     this.createDummies();
+    this.setVisible(false); // Hidden by default, toggleable via debug panel
+  }
+
+  public setVisible(enabled: boolean): void {
+    this.isVisible = enabled;
+    for (const mesh of this.meshes) {
+      mesh.visible = enabled;
+    }
+    for (const col of this.colliders) {
+      col.setEnabled(enabled);
+    }
   }
 
   private createDummies(): void {
@@ -86,7 +100,7 @@ export class GrayboxWorld {
     this.meshes.push(mesh);
 
     // Physics static collider
-    this.physics.createStaticBox(
+    const col = this.physics.createStaticBox(
       width / 2,
       height / 2,
       depth / 2,
@@ -95,6 +109,7 @@ export class GrayboxWorld {
       posZ,
       rotationEuler
     );
+    this.colliders.push(col);
 
     return mesh;
   }
@@ -149,9 +164,11 @@ export class GrayboxWorld {
     groundMesh.position.y = 0;
     groundMesh.receiveShadow = true;
     this.scene.add(groundMesh);
+    this.meshes.push(groundMesh);
 
     // Ground Rapier collider (top surface at y = 0)
-    this.physics.createStaticBox(groundSize / 2, 0.5, groundSize / 2, 0, -0.5, 0);
+    const groundCol = this.physics.createStaticBox(groundSize / 2, 0.5, groundSize / 2, 0, -0.5, 0);
+    this.colliders.push(groundCol);
   }
 
   private createPlatformsAndStairs(): void {
@@ -268,7 +285,8 @@ export class GrayboxWorld {
     this.scene.add(mesh);
     this.meshes.push(mesh);
 
-    this.physics.createStaticCylinder(height / 2, radius, x, y, z);
+    const col = this.physics.createStaticCylinder(height / 2, radius, x, y, z);
+    this.colliders.push(col);
   }
 
   private createSphere(radius: number, x: number, y: number, z: number, colorHex: number): void {
@@ -281,6 +299,7 @@ export class GrayboxWorld {
     this.scene.add(mesh);
     this.meshes.push(mesh);
 
-    this.physics.createStaticSphere(radius, x, y, z);
+    const col = this.physics.createStaticSphere(radius, x, y, z);
+    this.colliders.push(col);
   }
 }

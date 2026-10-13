@@ -1,5 +1,6 @@
 import Stats from 'stats.js';
 import GUI from 'lil-gui';
+import * as THREE from 'three';
 import { PlayerController } from '../player/player-controller';
 import { ThirdPersonCamera } from '../engine/camera';
 import { LightingModule } from '../engine/lighting';
@@ -11,6 +12,25 @@ import { ATTACKS } from '../data/attacks';
 import { EventBus } from '../combat/eventBus';
 import { AssetManager } from '../assets/assetManager';
 import { AnimationRetargeter } from '../animation/retargeter';
+import { ChunkManager } from '../world/terrain/chunkManager';
+import { TerrainMaterial } from '../world/terrain/terrainMaterial';
+import { WaterBodiesManager } from '../world/water/waterBodies';
+import { WindSystem } from '../world/wind/windSystem';
+import { PostPipeline, QualityPreset } from '../engine/post/postPipeline';
+import { FlyCam } from './flyCam';
+import { SporeAtmosphere } from '../world/atmosphere/spores';
+import { ProceduralTextureGenerator } from '../world/terrain/proceduralTextures';
+
+export interface WorldDebugOptions {
+  chunkManager?: ChunkManager;
+  terrainMaterial?: TerrainMaterial;
+  waterBodies?: WaterBodiesManager;
+  wind?: WindSystem;
+  postPipeline?: PostPipeline | null;
+  flyCam?: FlyCam | null;
+  spores?: SporeAtmosphere;
+  renderer?: THREE.WebGLRenderer;
+}
 
 export class DebugPanel {
   private stats: Stats;
@@ -22,6 +42,7 @@ export class DebugPanel {
   private lighting: LightingModule;
   private rapierDebug: RapierDebugRenderer;
   private graybox: GrayboxWorld;
+  private worldOpts?: WorldDebugOptions;
 
   private combatMonitor = {
     currentState: 'locomotion',
@@ -36,7 +57,33 @@ export class DebugPanel {
   private playerMonitor = {
     position: '0.00, 0.00, 0.00',
     grounded: false,
-    speed: '0.00 m/s'
+    speed: '0.00 m/s',
+    inWater: false
+  };
+
+  private terrainMonitor = {
+    activeChunks: 0,
+    pooledChunks: 0,
+    triangles: 0,
+    workerTime: '0.0 ms',
+    freezeStreaming: false
+  };
+
+  private perfMonitor = {
+    drawCalls: 0,
+    renderedTriangles: 0,
+    geometries: 0,
+    textures: 0
+  };
+
+  private qualityState = {
+    preset: 'high' as QualityPreset
+  };
+
+  private lightingMonitor = {
+    preset: 'sunless',
+    showPoolHelpers: false,
+    playerLightFlicker: true
   };
 
   private combatActions = {
@@ -59,6 +106,7 @@ export class DebugPanel {
 
   private physicsDebug = {
     showWireframes: false,
+    grayboxArea: false,
     respawn: () => {
       this.playerController.respawn();
     }
@@ -76,6 +124,9 @@ export class DebugPanel {
   };
 
   private assetActions = {
+    switchToSilhouette: () => {
+      this.playerController.switchCharacter('silhouette');
+    },
     switchToMixamo: () => {
       this.playerController.switchCharacter('player_test');
     },
@@ -95,13 +146,15 @@ export class DebugPanel {
     camera: ThirdPersonCamera,
     lighting: LightingModule,
     rapierDebug: RapierDebugRenderer,
-    graybox: GrayboxWorld
+    graybox: GrayboxWorld,
+    worldOpts?: WorldDebugOptions
   ) {
     this.playerController = playerController;
     this.camera = camera;
     this.lighting = lighting;
     this.rapierDebug = rapierDebug;
     this.graybox = graybox;
+    this.worldOpts = worldOpts;
 
     // 1. Stats.js
     this.stats = new Stats();
@@ -113,7 +166,7 @@ export class DebugPanel {
     document.body.appendChild(this.stats.dom);
 
     // 2. lil-gui
-    this.gui = new GUI({ title: 'Lightbringer Combat Debug [F1]' });
+    this.gui = new GUI({ title: 'Lightbringer: Dark World Debug [F1]' });
     this.gui.domElement.style.position = 'fixed';
     this.gui.domElement.style.top = '10px';
     this.gui.domElement.style.right = '10px';
@@ -124,15 +177,170 @@ export class DebugPanel {
       this.combatMonitor.lastHitResult = `${e.attackerId} -> ${e.targetId} (${e.damage} dmg, poise ${e.poiseDamage}${e.stagger ? ' [STAGGER]' : ''})`;
     });
 
+    this.setupQualityFolder();
+    this.setupTerrainFolder();
+    this.setupLightingFolder();
+    this.setupPostProcessingFolder();
+    this.setupAtmosphereWaterWindFolder();
+    this.setupFlyCamFolder();
+    this.setupPerformanceFolder();
     this.setupCombatMonitorFolder();
     this.setupCombatActionsFolder();
     this.setupAttackTuningFolder();
     this.setupStaminaDodgeFolder();
     this.setupMovementFolder();
     this.setupCameraFolder();
-    this.setupLightingFolder();
     this.setupPhysicsFolder();
     this.setupAssetAnimationFolder();
+  }
+
+  private setupQualityFolder(): void {
+    const f = this.gui.addFolder('Quality Presets');
+    f.add(this.qualityState, 'preset', ['low', 'medium', 'high'])
+      .name('Preset')
+      .onChange((preset: QualityPreset) => {
+        this.applyQualityPreset(preset);
+      });
+    f.open();
+  }
+
+  private applyQualityPreset(preset: QualityPreset): void {
+    this.qualityState.preset = preset;
+    this.lighting.setQuality(preset);
+
+    if (this.worldOpts?.terrainMaterial) {
+      this.worldOpts.terrainMaterial.setQuality(preset);
+    }
+    if (this.worldOpts?.postPipeline) {
+      this.worldOpts.postPipeline.setQuality(preset);
+    }
+    if (this.worldOpts?.spores) {
+      this.worldOpts.spores.setQuality(preset);
+    }
+    if (this.worldOpts?.chunkManager) {
+      this.worldOpts.chunkManager.renderRadius = preset === 'low' ? 2 : preset === 'medium' ? 3 : 4;
+    }
+  }
+
+  private setupTerrainFolder(): void {
+    const f = this.gui.addFolder('Streamed Terrain');
+    f.add(this.terrainMonitor, 'activeChunks').name('Active Chunks').listen().disable();
+    f.add(this.terrainMonitor, 'pooledChunks').name('Pooled Chunks').listen().disable();
+    f.add(this.terrainMonitor, 'triangles').name('Total Triangles').listen().disable();
+    f.add(this.terrainMonitor, 'workerTime').name('Worker Gen Time').listen().disable();
+
+    if (this.worldOpts?.chunkManager) {
+      const cm = this.worldOpts.chunkManager;
+      f.add(this.terrainMonitor, 'freezeStreaming')
+        .name('Freeze Streaming')
+        .onChange((val: boolean) => {
+          cm.freezeStreaming = val;
+        });
+      f.add(cm, 'renderRadius', 1, 5, 1).name('Render Radius (chunks)');
+    }
+
+    // Ground layer procedural fallback report
+    const fbReport = ProceduralTextureGenerator.getInstance().getTerrainTextures().fallbackReport;
+    const reportStr = Object.entries(fbReport)
+      .map(([k, isFb]) => `${k}: ${isFb ? 'Procedural Fallback' : 'Texture File'}`)
+      .join('\n');
+    f.add({ report: reportStr }, 'report').name('Layer Textures').listen().disable();
+    f.open();
+  }
+
+  private setupLightingFolder(): void {
+    const f = this.gui.addFolder('Sunless Lighting Model');
+    f.add(this.lightingMonitor, 'preset', ['sunless', 'daylight'])
+      .name('Lighting Mode')
+      .onChange((mode: 'sunless' | 'daylight') => {
+        this.lighting.applyPreset(mode);
+      });
+
+    // Player Light Controls
+    const pl = this.lighting.playerConfig;
+    f.addColor(pl, 'color').name('Player Light Color');
+    f.add(pl, 'intensity', 0.5, 10.0, 0.1).name('Player Intensity');
+    f.add(pl, 'distance', 5.0, 50.0, 1.0).name('Player Distance');
+    f.add(pl, 'flickerIntensity', 0.0, 0.5, 0.02).name('Flicker Amount');
+    f.add(pl, 'flickerSpeed', 0.5, 10.0, 0.5).name('Flicker Speed');
+
+    // Light Pool Controls
+    f.add(this.lightingMonitor, 'showPoolHelpers')
+      .name('Show Light Pool Helpers')
+      .onChange((val: boolean) => {
+        this.lighting.lightPool.setDebugVisible(val);
+      });
+
+    // Daylight Preset Sun Tuning
+    const sunCfg = this.lighting.config;
+    const updateSun = () => {
+      this.lighting.applySunTransform(this.playerController.renderPos);
+    };
+    f.add(sunCfg, 'elevation', 5.0, 85.0, 1.0).name('Daylight Sun Elevation').onChange(updateSun);
+    f.add(sunCfg, 'azimuth', 0.0, 360.0, 1.0).name('Daylight Sun Azimuth').onChange(updateSun);
+    f.add(sunCfg, 'intensity', 0.0, 4.0, 0.1).name('Daylight Sun Intensity').onChange(updateSun);
+    f.open();
+  }
+
+  private setupPostProcessingFolder(): void {
+    if (!this.worldOpts?.postPipeline) return;
+    const pp = this.worldOpts.postPipeline;
+    const cfg = pp.config;
+    const f = this.gui.addFolder('Post-Processing (pmndrs)');
+
+    const apply = () => pp.applyConfig();
+
+    f.add(cfg, 'bloomIntensity', 0.0, 3.5, 0.05).name('Bloom Intensity').onChange(apply);
+    f.add(cfg, 'bloomThreshold', 0.0, 1.0, 0.02).name('Bloom Threshold').onChange(apply);
+    f.add(cfg, 'bloomSmoothing', 0.0, 0.5, 0.02).name('Bloom Smoothing').onChange(apply);
+    f.add(cfg, 'vignetteDarkness', 0.0, 1.0, 0.05).name('Vignette Darkness').onChange(apply);
+    f.add(cfg, 'vignetteOffset', 0.0, 1.0, 0.05).name('Vignette Offset').onChange(apply);
+    f.add(cfg, 'grainOpacity', 0.0, 0.3, 0.01).name('Film Grain').onChange(apply);
+    f.add(cfg, 'chromaticAberration', 0.0, 0.005, 0.0002).name('Chromatic Aberration').onChange(apply);
+    f.add(cfg, 'contrast', -0.5, 0.5, 0.02).name('Contrast').onChange(apply);
+    f.add(cfg, 'saturation', -1.0, 1.0, 0.05).name('Saturation').onChange(apply);
+    f.add(cfg, 'depthOfFieldEnabled').name('Depth of Field').onChange(apply);
+    f.close();
+  }
+
+  private setupAtmosphereWaterWindFolder(): void {
+    const f = this.gui.addFolder('Atmosphere, Water & Wind');
+
+    if (this.worldOpts?.wind) {
+      const wind = this.worldOpts.wind;
+      f.add(wind, 'baseStrength', 0.0, 10.0, 0.2).name('Wind Strength (m/s)');
+      f.add(wind, 'gustStrength', 0.0, 6.0, 0.2).name('Gust Strength');
+      f.add(wind, 'gustFrequency', 0.05, 1.0, 0.05).name('Gust Frequency (Hz)');
+    }
+
+    if (this.worldOpts?.waterBodies) {
+      const regWater = this.worldOpts.waterBodies.region.water;
+      f.add(regWater, 'shallowSpeedMultiplier', 0.2, 1.0, 0.05).name('Wading Speed Multiplier');
+      f.add(regWater, 'rippleFrequency', 0.5, 4.0, 0.1).name('Ripple Frequency');
+    }
+    f.close();
+  }
+
+  private setupFlyCamFolder(): void {
+    if (!this.worldOpts?.flyCam) return;
+    const fc = this.worldOpts.flyCam;
+    const f = this.gui.addFolder('Fly-Cam Free Camera');
+    f.add(fc, 'enabled').name('Enable Detached FlyCam').onChange((val: boolean) => {
+      if (val) {
+        fc.syncFromCamera();
+      }
+    });
+    f.add(fc, 'speed', 4.0, 50.0, 1.0).name('FlyCam Speed (m/s)');
+    f.close();
+  }
+
+  private setupPerformanceFolder(): void {
+    const f = this.gui.addFolder('Performance Diagnostics');
+    f.add(this.perfMonitor, 'drawCalls').name('Draw Calls').listen().disable();
+    f.add(this.perfMonitor, 'renderedTriangles').name('Rendered Tris').listen().disable();
+    f.add(this.perfMonitor, 'geometries').name('Memory Geometries').listen().disable();
+    f.add(this.perfMonitor, 'textures').name('Memory Textures').listen().disable();
+    f.close();
   }
 
   private setupCombatMonitorFolder(): void {
@@ -144,7 +352,7 @@ export class DebugPanel {
     f.add(this.combatMonitor, 'iFrameActive').name('i-Frames Active').listen().disable();
     f.add(this.combatMonitor, 'inputBuffer').name('Input Buffer').listen().disable();
     f.add(this.combatMonitor, 'lastHitResult').name('Last Hit Result').listen().disable();
-    f.open();
+    f.close();
   }
 
   private setupCombatActionsFolder(): void {
@@ -154,155 +362,106 @@ export class DebugPanel {
     f.add(this.combatActions, 'toggleHitboxDebug').name('Toggle Hitbox Debug');
     f.add(this.combatActions, 'refillStamina').name('Give 100% Stamina');
     f.add(this.combatActions, 'toggleGodMode').name('Toggle God Mode');
-    f.open();
+    f.close();
   }
 
   private setupAttackTuningFolder(): void {
-    const f = this.gui.addFolder('Attack Tuning (Live Data)');
-
-    // Helper to add attack controls
-    const addAttackControls = (folderName: string, attackKey: string) => {
-      const sub = f.addFolder(folderName);
-      const att = ATTACKS[attackKey];
-
-      sub.add(att, 'damage', 5, 120, 1).name('Damage');
-      sub.add(att, 'poiseDamage', 5, 120, 1).name('Poise Dmg');
-      sub.add(att, 'startup', 0.05, 1.2, 0.01).name('Startup (s)');
-      sub.add(att, 'active', 0.05, 0.6, 0.01).name('Active (s)');
-      sub.add(att, 'recovery', 0.1, 1.5, 0.01).name('Recovery (s)');
-      sub.add(att, 'lungeDistance', 0.0, 3.0, 0.05).name('Lunge (m)');
-      sub.add(att, 'hitStopDuration', 0.0, 0.3, 0.01).name('Hit Stop (s)');
-      sub.add(att.cameraShake, 'amplitude', 0.0, 0.8, 0.02).name('Shake Amp');
+    const f = this.gui.addFolder('Combat Attack Timing');
+    for (const [, def] of Object.entries(ATTACKS)) {
+      const sub = f.addFolder(def.name);
+      sub.add(def, 'damage', 5, 80, 1).name('Damage');
+      sub.add(def, 'poiseDamage', 5, 60, 1).name('Poise Dmg');
+      sub.add(def, 'startup', 0.05, 0.8, 0.01).name('Startup (s)');
+      sub.add(def, 'active', 0.05, 0.5, 0.01).name('Active (s)');
+      sub.add(def, 'recovery', 0.05, 1.0, 0.01).name('Recovery (s)');
       sub.close();
-    };
-
-    addAttackControls('Light Attack 1', 'light_1');
-    addAttackControls('Light Attack 2', 'light_2');
-    addAttackControls('Light Attack 3 (Finisher)', 'light_3');
-    addAttackControls('Heavy Attack', 'heavy');
+    }
+    f.close();
   }
 
   private setupStaminaDodgeFolder(): void {
-    const f = this.gui.addFolder('Stamina & Dodge Tuning');
-    const stm = this.playerController.stamina.config;
-    const cbt = this.playerController.combatConfig;
+    const f = this.gui.addFolder('Stamina & Dodge');
+    const stam = this.playerController.stamina.config;
+    f.add(stam, 'maxStamina', 50, 200, 5).name('Max Stamina');
+    f.add(stam, 'regenRate', 5, 60, 2).name('Regen Rate /s');
+    f.add(stam, 'regenDelay', 0.1, 2.0, 0.05).name('Regen Delay (s)');
+    f.add(stam, 'dodgeCost', 5, 40, 1).name('Dodge Cost');
+    f.add(stam, 'sprintCostPerSecond', 5, 30, 1).name('Sprint Cost /s');
 
-    f.add(stm, 'regenRate', 5, 80, 1).name('Stamina Regen (/s)');
-    f.add(stm, 'regenDelay', 0.1, 3.0, 0.1).name('Regen Delay (s)');
-    f.add(stm, 'exhaustedDelay', 0.2, 3.0, 0.1).name('Exhausted Delay (s)');
-    f.add(stm, 'lightAttackCost', 0, 40, 1).name('Light Cost');
-    f.add(stm, 'heavyAttackCost', 0, 60, 1).name('Heavy Cost');
-    f.add(stm, 'dodgeCost', 0, 50, 1).name('Dodge Cost');
-
-    f.add(cbt, 'dodgeDistance', 1.0, 8.0, 0.2).name('Dodge Distance (m)');
-    f.add(cbt, 'dodgeDuration', 0.2, 1.0, 0.02).name('Dodge Duration (s)');
-    f.add(cbt, 'dodgeIFrameStart', 0.0, 0.2, 0.01).name('i-Frame Start (s)');
-    f.add(cbt, 'dodgeIFrameEnd', 0.1, 0.45, 0.01).name('i-Frame End (s)');
-
-    f.add(cbt, 'aimAssistRange', 1.0, 8.0, 0.2).name('Aim Assist Dist (m)');
-    f.add(cbt, 'aimAssistAngleDegrees', 10, 90, 5).name('Aim Assist Angle (°)');
+    const dodge = this.playerController.combatConfig;
+    f.add(dodge, 'dodgeDuration', 0.2, 0.8, 0.02).name('Dodge Time (s)');
+    f.add(dodge, 'dodgeDistance', 1.0, 10.0, 0.5).name('Dodge Distance (m)');
+    f.add(dodge, 'dodgeIFrameStart', 0.0, 0.2, 0.01).name('i-Frame Start (s)');
+    f.add(dodge, 'dodgeIFrameEnd', 0.1, 0.5, 0.01).name('i-Frame End (s)');
+    f.close();
   }
 
   private setupMovementFolder(): void {
-    const f = this.gui.addFolder('Movement Tuning');
+    const f = this.gui.addFolder('Locomotion & Controller');
     const cfg = this.playerController.config;
-
-    f.add(this.playerMonitor, 'position').name('Pos (X, Y, Z)').listen().disable();
+    f.add(this.playerMonitor, 'position').name('Player Position').listen().disable();
+    f.add(this.playerMonitor, 'speed').name('Live Speed').listen().disable();
     f.add(this.playerMonitor, 'grounded').name('Grounded').listen().disable();
-    f.add(this.playerMonitor, 'speed').name('Speed').listen().disable();
-
-    f.add(cfg, 'walkSpeed', 1.0, 15.0, 0.1).name('Walk Speed (m/s)');
-    f.add(cfg, 'sprintSpeed', 2.0, 25.0, 0.1).name('Sprint Speed (m/s)');
-    f.add(cfg, 'acceleration', 5.0, 100.0, 1.0).name('Acceleration (m/s²)');
-    f.add(cfg, 'deceleration', 5.0, 100.0, 1.0).name('Deceleration (m/s²)');
-    f.add(cfg, 'jumpHeight', 0.5, 3.5, 0.05).name('Jump Height (m)');
-    f.add(cfg, 'gravity', -60.0, -5.0, 1.0).name('Gravity (m/s²)');
-    f.add(cfg, 'coyoteTime', 0.0, 0.4, 0.01).name('Coyote Time (s)');
-    f.add(cfg, 'jumpBufferTime', 0.0, 0.4, 0.01).name('Jump Buffer (s)');
-
-    f.add(cfg, 'autostepHeight', 0.05, 0.6, 0.05)
-      .name('Autostep Height (m)')
-      .onChange(() => {
-        this.playerController.applyControllerSettings();
-      });
-
-    f.add(cfg, 'maxSlopeAngle', 15.0, 75.0, 1.0)
-      .name('Max Slope Angle (°)')
-      .onChange(() => {
-        this.playerController.applyControllerSettings();
-      });
+    f.add(cfg, 'walkSpeed', 2.0, 10.0, 0.2).name('Walk Speed');
+    f.add(cfg, 'sprintSpeed', 5.0, 18.0, 0.5).name('Sprint Speed');
+    f.add(cfg, 'acceleration', 10.0, 80.0, 2.0).name('Acceleration');
+    f.add(cfg, 'deceleration', 10.0, 80.0, 2.0).name('Deceleration');
+    f.add(cfg, 'jumpHeight', 0.5, 3.5, 0.1).name('Jump Height');
+    f.add(cfg, 'maxSlopeAngle', 25.0, 60.0, 1.0)
+      .name('Max Slope Angle')
+      .onChange(() => this.playerController.applyControllerSettings());
+    f.close();
   }
 
   private setupCameraFolder(): void {
     const f = this.gui.addFolder('Camera Rig');
     const cfg = this.camera.config;
-
     f.add(cfg, 'distance', 1.5, 8.0, 0.1).name('Distance (m)').listen();
     f.add(cfg, 'shoulderOffsetX', -1.0, 1.5, 0.05).name('Shoulder Offset X');
     f.add(cfg, 'targetHeight', 0.5, 2.5, 0.05).name('Target Height Y');
     f.add(cfg, 'mouseSensitivity', 0.0005, 0.008, 0.0002).name('Sensitivity');
     f.add(cfg, 'damping', 2.0, 35.0, 1.0).name('Follow Damping');
-  }
-
-  private setupLightingFolder(): void {
-    const f = this.gui.addFolder('Lighting & Sun');
-    const cfg = this.lighting.config;
-
-    const updateLight = () => {
-      this.lighting.applySunTransform(this.playerController.renderPos);
-    };
-
-    f.add(cfg, 'elevation', 5.0, 85.0, 1.0).name('Sun Elevation (°)').onChange(updateLight);
-    f.add(cfg, 'azimuth', 0.0, 360.0, 1.0).name('Sun Azimuth (°)').onChange(updateLight);
-    f.add(cfg, 'intensity', 0.0, 4.0, 0.1).name('Sun Intensity').onChange(updateLight);
-    f.addColor(cfg, 'color').name('Sun Color').onChange(updateLight);
+    f.close();
   }
 
   private setupPhysicsFolder(): void {
-    const f = this.gui.addFolder('Physics & Colliders');
+    const f = this.gui.addFolder('Physics & Test Areas');
     f.add(this.physicsDebug, 'showWireframes')
       .name('Collider Wireframes')
       .onChange((val: boolean) => {
         this.rapierDebug.setVisible(val);
       });
 
+    // Step 1 graybox test area toggle
+    f.add(this.physicsDebug, 'grayboxArea')
+      .name('Graybox test area (Stairs/Ramp)')
+      .onChange((val: boolean) => {
+        this.graybox.setVisible(val);
+      });
+
     f.add(this.physicsDebug, 'respawn').name('Respawn Player');
+    f.close();
   }
 
   private setupAssetAnimationFolder(): void {
-    const f = this.gui.addFolder('Asset & Animation Pipeline');
+    const f = this.gui.addFolder('Animation & Asset Pipeline');
+    f.add(this.animationMonitor, 'logicalAnim').name('Logical State').listen().disable();
+    f.add(this.animationMonitor, 'baseLayer').name('Base Layer').listen().disable();
+    f.add(this.animationMonitor, 'upperLayer').name('Upper Layer').listen().disable();
+    f.add(this.animationMonitor, 'additiveLayer').name('Additive Layer').listen().disable();
+    f.add(this.animationMonitor, 'fallbackActive').name('Procedural Fallback').listen().disable();
+    f.add(this.animationMonitor, 'fallbackReason').name('Fallback Reason').listen().disable();
+    f.add(this.animationMonitor, 'retargetStats').name('Retarget Cache').listen().disable();
+    f.add(this.animationMonitor, 'assetMemory').name('Asset Cache').listen().disable();
 
-    // Live Monitors
-    const mon = f.addFolder('Live Status');
-    mon.add(this.animationMonitor, 'logicalAnim').name('Logical Anim').listen().disable();
-    mon.add(this.animationMonitor, 'baseLayer').name('Base Layer (Weight)').listen().disable();
-    mon.add(this.animationMonitor, 'upperLayer').name('Upper Layer (Weight)').listen().disable();
-    mon.add(this.animationMonitor, 'additiveLayer').name('Additive (Weight)').listen().disable();
-    mon.add(this.animationMonitor, 'fallbackActive').name('Procedural Fallback?').listen().disable();
-    mon.add(this.animationMonitor, 'fallbackReason').name('Fallback Reason').listen().disable();
-    mon.add(this.animationMonitor, 'retargetStats').name('Retarget Hits/Miss').listen().disable();
-    mon.add(this.animationMonitor, 'assetMemory').name('Assets in Memory').listen().disable();
-    mon.open();
-
-    // Foot IK Controls
-    const ik = f.addFolder('Foot IK Tuning');
-    const ikCfg = this.playerController.anim.footIK.config;
-    ik.add(ikCfg, 'enabled').name('Foot IK Enabled');
-    ik.add(ikCfg, 'rayLength', 0.4, 2.0, 0.05).name('Ray Length (m)');
-    ik.add(ikCfg, 'smoothingSpeed', 4.0, 30.0, 1.0).name('Smoothing Speed');
-    ik.add(ikCfg, 'maxAdjust', 0.1, 0.8, 0.05).name('Max Adjust (m)');
-    ik.add(ikCfg, 'footOffset', 0.0, 0.2, 0.01).name('Foot Offset (m)');
-    ik.close();
-
-    // Model & Pipeline Actions
-    const acts = f.addFolder('Asset Controls');
+    const acts = f.addFolder('Asset Actions');
+    acts.add(this.assetActions, 'switchToSilhouette').name('Switch: Silhouette Hero');
     acts.add(this.assetActions, 'switchToMixamo').name('Switch: Mixamo Rig');
     acts.add(this.assetActions, 'switchToSMPL').name('Switch: SMPL Rig');
     acts.add(this.assetActions, 'hotReload').name('Hot-Reload All Assets');
     acts.add(this.assetActions, 'openViewer').name('Open Model Viewer [/viewer]');
-    acts.open();
-
-    f.open();
+    acts.close();
+    f.close();
   }
 
   public toggle(): void {
@@ -316,13 +475,31 @@ export class DebugPanel {
   }
 
   public endFrame(): void {
-    // Update live monitor display
+    // 1. Live player status
     const p = this.playerController.renderPos;
     this.playerMonitor.position = `${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}`;
     this.playerMonitor.grounded = this.playerController.isGrounded;
     this.playerMonitor.speed = `${this.playerController.currentSpeed.toFixed(2)} m/s`;
 
-    // Combat monitor
+    // 2. Terrain statistics
+    if (this.worldOpts?.chunkManager) {
+      const stats = this.worldOpts.chunkManager.stats;
+      this.terrainMonitor.activeChunks = stats.activeChunks;
+      this.terrainMonitor.pooledChunks = stats.pooledChunks;
+      this.terrainMonitor.triangles = stats.totalTriangles;
+      this.terrainMonitor.workerTime = `${stats.lastWorkerTimeMs.toFixed(1)} ms`;
+    }
+
+    // 3. Renderer performance statistics
+    if (this.worldOpts?.renderer) {
+      const rInfo = this.worldOpts.renderer.info;
+      this.perfMonitor.drawCalls = rInfo.render.calls;
+      this.perfMonitor.renderedTriangles = rInfo.render.triangles;
+      this.perfMonitor.geometries = rInfo.memory.geometries;
+      this.perfMonitor.textures = rInfo.memory.textures;
+    }
+
+    // 4. Combat monitor
     this.combatMonitor.currentState = this.playerController.stateMachine.getCurrentStateId();
     const prev = this.playerController.stateMachine.getPreviousStateId();
     this.combatMonitor.previousState = prev || 'none';
@@ -331,7 +508,7 @@ export class DebugPanel {
     this.combatMonitor.iFrameActive = this.playerController.stateMachine.isInvulnerable();
     this.combatMonitor.inputBuffer = this.playerController.inputBuffer.getQueueSummary();
 
-    // Animation & Asset monitor
+    // 5. Animation monitor
     const anim = this.playerController.anim;
     this.animationMonitor.logicalAnim = anim.getCurrentAnim();
     const layers = anim.getLayerState();

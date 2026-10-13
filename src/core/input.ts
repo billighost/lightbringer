@@ -121,6 +121,7 @@ export class InputManager {
 
     if (this.overlayElement) {
       this.overlayElement.addEventListener('click', () => {
+        this.overlayElement?.classList.add('hidden');
         requestLock();
       });
     }

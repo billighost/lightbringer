@@ -4,6 +4,13 @@ import { RegionData } from '../../data/regions/schema';
 
 export type LightingPreset = 'sunless' | 'daylight';
 
+export interface SunConfig {
+  elevation: number;
+  azimuth: number;
+  intensity: number;
+  color: string;
+}
+
 export interface PlayerLightConfig {
   color: string;
   intensity: number;
@@ -26,6 +33,13 @@ export class SunlessLighting {
   private targetObject: THREE.Object3D;
 
   public activePreset: LightingPreset = 'sunless';
+
+  public config: SunConfig = {
+    elevation: 48,
+    azimuth: 40,
+    intensity: 1.6,
+    color: '#fff9e6'
+  };
 
   public playerConfig: PlayerLightConfig = {
     color: '#ffc86b', // warm gold-white
@@ -120,6 +134,21 @@ export class SunlessLighting {
 
       this.playerLight.visible = true;
     }
+  }
+
+  public applySunTransform(center: THREE.Vector3): void {
+    const phi = THREE.MathUtils.degToRad(90 - this.config.elevation);
+    const theta = THREE.MathUtils.degToRad(this.config.azimuth);
+
+    const shadowDistance = 45;
+    const x = shadowDistance * Math.sin(phi) * Math.sin(theta);
+    const y = shadowDistance * Math.cos(phi);
+    const z = shadowDistance * Math.sin(phi) * Math.cos(theta);
+
+    this.targetObject.position.set(center.x, center.y, center.z);
+    this.dirLight.position.set(center.x + x, center.y + y, center.z + z);
+    this.dirLight.intensity = this.config.intensity;
+    this.dirLight.color.set(this.config.color);
   }
 
   public update(playerPos: THREE.Vector3, dt = 0.016, time = 0): void {

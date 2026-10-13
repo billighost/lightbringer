@@ -327,9 +327,21 @@ export function createProceduralClips(
       ...eulerToQuat(0.03, 0, 0),
       ...eulerToQuat(0, 0, 0)
     ];
+    const leftArmIdle = [
+      ...eulerToQuat(0, 0, -1.25),
+      ...eulerToQuat(0, 0, -1.22),
+      ...eulerToQuat(0, 0, -1.25)
+    ];
+    const rightArmIdle = [
+      ...eulerToQuat(0, 0, 1.25),
+      ...eulerToQuat(0, 0, 1.22),
+      ...eulerToQuat(0, 0, 1.25)
+    ];
     const idleTracks: THREE.KeyframeTrack[] = [
       makeRotTrack(names.spine, times, spineQuats),
-      makeRotTrack(names.chest, times, chestQuats)
+      makeRotTrack(names.chest, times, chestQuats),
+      makeRotTrack(names.leftUpperArm, times, leftArmIdle),
+      makeRotTrack(names.rightUpperArm, times, rightArmIdle)
     ];
     clips.push(new THREE.AnimationClip('idle', 2.0, idleTracks));
   }
@@ -352,18 +364,18 @@ export function createProceduralClips(
       ...eulerToQuat(-0.4, 0, 0)
     ];
     const leftArmQuats = [
-      ...eulerToQuat(-0.3, 0, 0),
-      ...eulerToQuat(0, 0, 0),
-      ...eulerToQuat(0.3, 0, 0),
-      ...eulerToQuat(0, 0, 0),
-      ...eulerToQuat(-0.3, 0, 0)
+      ...eulerToQuat(-0.3, 0, -1.1),
+      ...eulerToQuat(0, 0, -1.1),
+      ...eulerToQuat(0.3, 0, -1.1),
+      ...eulerToQuat(0, 0, -1.1),
+      ...eulerToQuat(-0.3, 0, -1.1)
     ];
     const rightArmQuats = [
-      ...eulerToQuat(0.3, 0, 0),
-      ...eulerToQuat(0, 0, 0),
-      ...eulerToQuat(-0.3, 0, 0),
-      ...eulerToQuat(0, 0, 0),
-      ...eulerToQuat(0.3, 0, 0)
+      ...eulerToQuat(0.3, 0, 1.1),
+      ...eulerToQuat(0, 0, 1.1),
+      ...eulerToQuat(-0.3, 0, 1.1),
+      ...eulerToQuat(0, 0, 1.1),
+      ...eulerToQuat(0.3, 0, 1.1)
     ];
     // In-place hips bob (Y bob only, X and Z are strictly 0)
     const baseHipsY = 0.95 * scaleY;
@@ -403,6 +415,20 @@ export function createProceduralClips(
       ...eulerToQuat(0, 0, 0),
       ...eulerToQuat(-0.7, 0, 0)
     ];
+    const leftArmQuats = [
+      ...eulerToQuat(-0.6, 0, -1.0),
+      ...eulerToQuat(0, 0, -1.0),
+      ...eulerToQuat(0.6, 0, -1.0),
+      ...eulerToQuat(0, 0, -1.0),
+      ...eulerToQuat(-0.6, 0, -1.0)
+    ];
+    const rightArmQuats = [
+      ...eulerToQuat(0.6, 0, 1.0),
+      ...eulerToQuat(0, 0, 1.0),
+      ...eulerToQuat(-0.6, 0, 1.0),
+      ...eulerToQuat(0, 0, 1.0),
+      ...eulerToQuat(0.6, 0, 1.0)
+    ];
     const spineQuats = [
       ...eulerToQuat(0.15, 0, 0),
       ...eulerToQuat(0.15, 0.05, 0),
@@ -410,11 +436,22 @@ export function createProceduralClips(
       ...eulerToQuat(0.15, -0.05, 0),
       ...eulerToQuat(0.15, 0, 0)
     ];
+    const baseHipsY = 0.95 * scaleY;
+    const hipsPositions = [
+      0, baseHipsY, 0,
+      0, baseHipsY + 0.05, 0,
+      0, baseHipsY, 0,
+      0, baseHipsY + 0.05, 0,
+      0, baseHipsY, 0
+    ];
     clips.push(
       new THREE.AnimationClip('run', 0.7, [
         makeRotTrack(names.leftUpperLeg, times, leftLegQuats),
         makeRotTrack(names.rightUpperLeg, times, rightLegQuats),
-        makeRotTrack(names.spine, times, spineQuats)
+        makeRotTrack(names.leftUpperArm, times, leftArmQuats),
+        makeRotTrack(names.rightUpperArm, times, rightArmQuats),
+        makeRotTrack(names.spine, times, spineQuats),
+        makePosTrack(names.hips, times, hipsPositions)
       ])
     );
   }
